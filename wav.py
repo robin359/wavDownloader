@@ -3,80 +3,71 @@ import yt_dlp
 import tkinter as tk
 from tkinter import filedialog
 
-def download_audio(video_url, output_dir):
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
-            'preferredquality': '192',
-        }],
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(video_url, download=True)
-        if 'entries' in info_dict:
-            # Playlist
-            for entry in info_dict['entries']:
-                file_path = ydl.prepare_filename(entry)
-                print(f'Successfully downloaded audio file: {file_path}')
-        else:
-            # Single video
-            file_path = ydl.prepare_filename(info_dict)
-            print(f'Successfully downloaded audio file: {file_path}')
-        return file_path
+class App:
+    def __init__(self, master):
+        self.master = master
+        master.title("YouTube Audio Downloader")
+        master.resizable(True, True)
 
+        self.url_label = tk.Label(master, text="Enter the YouTube video/playlist URL:")
+        self.url_label.pack()
 
-def choose_directory():
-    output_dir = filedialog.askdirectory()
-    if output_dir:
-        directory_entry.delete(0, tk.END)
-        directory_entry.insert(0, output_dir)
+        self.url_entry = tk.Entry(master, width=100)
+        self.url_entry.pack(padx=10, pady=5)
 
+        self.browse_button = tk.Button(master, text="Choose Output Directory", command=self.choose_directory)
+        self.browse_button.pack(padx=10, pady=5)
 
-def download():
-    url = url_entry.get()
-    output_dir = directory_entry.get()
-    try:
-        os.makedirs(output_dir, exist_ok=True)
-        audio_file_path = download_audio(url, output_dir)
-        status_label.config(text=f'Successfully downloaded audio file: {audio_file_path}')
-    except Exception as e:
-        status_label.config(text=f'Error: {e}')
+        self.download_button = tk.Button(master, text="Download Audio", command=self.download_audio)
+        self.download_button.pack(padx=10, pady=5)
 
+        self.quit_button = tk.Button(master, text="Quit", command=master.quit)
+        self.quit_button.pack(padx=10, pady=5)
+
+        self.status_label = tk.Label(master, text="")
+        self.status_label.pack()
+
+    def choose_directory(self):
+        dir_path = filedialog.askdirectory()
+        if dir_path:
+            self.output_dir = dir_path
+            self.status_label.config(text=f"Output directory: {self.output_dir}")
+
+    def download_audio(self):
+        video_url = self.url_entry.get()
+        if not video_url:
+            self.status_label.config(text="Error: Enter a valid YouTube URL")
+            return
+
+        if not hasattr(self, 'output_dir'):
+            self.status_label.config(text="Error: Choose an output directory")
+            return
+
+        try:
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': os.path.join(self.output_dir, '%(title)s.%(ext)s'),
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'wav',
+                    'preferredquality': '192',
+                }],
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(video_url, download=True)
+                if 'entries' in info_dict:
+                    # Playlist
+                    for entry in info_dict['entries']:
+                        file_path = ydl.prepare_filename(entry)
+                        self.status_label.config(text=f"Successfully downloaded audio file: {os.path.splitext(file_path)[0]}.wav")
+                else:
+                    # Single video
+                    file_path = ydl.prepare_filename(info_dict)
+                    self.status_label.config(text=f"Successfully downloaded audio file: {os.path.splitext(file_path)[0]}.wav")
+        except Exception as e:
+            self.status_label.config(text=f"Error: {e}")
 
 root = tk.Tk()
-root.title('YouTube Audio Downloader')
-
-# URL Entry
-url_label = tk.Label(root, text='Enter the YouTube video/playlist URL:')
-url_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
-
-url_entry = tk.Entry(root, width=50)
-url_entry.grid(row=0, column=1, padx=10, pady=10, sticky='w')
-
-# Directory Entry
-directory_label = tk.Label(root, text='Choose the directory to store the files:')
-directory_label.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-
-directory_entry = tk.Entry(root, width=50)
-directory_entry.grid(row=1, column=1, padx=10, pady=10, sticky='w')
-
-directory_button = tk.Button(root, text='Choose Directory', command=choose_directory)
-directory_button.grid(row=1, column=2, padx=10, pady=10, sticky='w')
-
-# Download Button
-download_button = tk.Button(root, text='Download Audio', command=download)
-download_button.grid(row=2, column=0, padx=10, pady=10)
-
-# Status Label
-status_label = tk.Label(root, text='', fg='green')
-status_label.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-# Set minimum window size
-root.minsize(600, 150)
-
-# Center window on screen
-root.eval('tk::PlaceWindow . center')
-
+app = App(root)
 root.mainloop()
