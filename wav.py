@@ -1,5 +1,43 @@
 import os
+import tkinter as tk
 import yt_dlp
+
+
+class AudioDownloaderGUI:
+    def __init__(self, master):
+        self.master = master
+        master.title("Audio Downloader")
+
+        # URL input label and entry field
+        self.url_label = tk.Label(master, text="YouTube video/playlist URL:")
+        self.url_label.pack()
+        self.url_entry = tk.Entry(master)
+        self.url_entry.pack()
+
+        # Output directory input label and entry field
+        self.dir_label = tk.Label(master, text="Output directory:")
+        self.dir_label.pack()
+        self.dir_entry = tk.Entry(master)
+        self.dir_entry.pack()
+
+        # Download button
+        self.download_button = tk.Button(master, text="Download", command=self.download)
+        self.download_button.pack()
+
+        # Status label
+        self.status_label = tk.Label(master, text="")
+        self.status_label.pack()
+
+    def download(self):
+        video_url = self.url_entry.get()
+        output_dir = self.dir_entry.get()
+
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            audio_file_path = download_audio(video_url, output_dir)
+            self.status_label.configure(text=f"Successfully downloaded audio file: {audio_file_path}")
+        except Exception as e:
+            self.status_label.configure(text=f"Error: {e}")
 
 
 def download_audio(video_url, output_dir):
@@ -27,16 +65,6 @@ def download_audio(video_url, output_dir):
 
 
 if __name__ == '__main__':
-    while True:
-        url = input('Enter the YouTube video/playlist URL: ')
-        output_dir = input('Enter the directory to store the files: ')
-        try:
-            os.makedirs(output_dir, exist_ok=True)
-            audio_file_path = download_audio(url, output_dir)
-            print(f'Successfully downloaded audio file: {audio_file_path}')
-        except Exception as e:
-            print(f'Error: {e}')
-
-        choice = input('Do you want to download another video/playlist? [y/n]: ')
-        if choice.lower() != 'y':
-            break
+    root = tk.Tk()
+    gui = AudioDownloaderGUI(root)
+    root.mainloop()
